@@ -4,6 +4,7 @@ import Landing from "./components/Landing";
 import Deposit from "./components/Deposit";
 import AccordionCom from "./components/AccordionCom";
 import Info from "./components/Info";
+import Footer from "./components/Footer";
 class App extends React.Component {
   render() {
     return (
@@ -12,6 +13,7 @@ class App extends React.Component {
         <Info />
         <Deposit />
         <AccordionCom />
+        <Footer />
       </div>
     );
   }
