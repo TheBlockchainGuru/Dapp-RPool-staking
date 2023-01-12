@@ -8,7 +8,7 @@ class Info extends React.Component {
       <Box
         sx={{
           background:
-            "linear-gradient(90deg, rgba(2,0,36,1) 0%, rgba(9,9,121,1) 18%, rgb(123 228 255) 100%));",
+            "linear-gradient(90deg, rgba(2,0,36,1) 0%, rgba(9,9,121,1) 18%, rgba(0,212,255,1) 100%);",
         }}
       >
         <Stack
@@ -27,10 +27,10 @@ class Info extends React.Component {
               REDUCING RISK IN DEFI
             </Typography>
             <Typography variant="h6" sx={{ textAlign: "left", my: 3 }}>
-              PGV is one of the only defi projects allowing each user to request
-              a full deposit refund after 15 days of initial deposit without any
-              deductions. No need to worry about having your deposit locked up
-              for months at a time.
+              RugPool is one of the only defi projects allowing each user to
+              request a full deposit refund after 15 days of initial deposit
+              without any deductions. No need to worry about having your deposit
+              locked up for months at a time.
             </Typography>
           </Box>
           <Box sx={{ flex: 1 }}>
