@@ -3,31 +3,213 @@ import { Button, Typography } from "@mui/material";
 import OutlinedInput from "@mui/material/OutlinedInput";
 import InputAdornment from "@mui/material/InputAdornment";
 import { Box, Stack } from "@mui/material";
-import Countdown from "react-countdown";
 import PermIdentityIcon from "@mui/icons-material/PermIdentity";
 import AccountBalanceWalletOutlinedIcon from "@mui/icons-material/AccountBalanceWalletOutlined";
 import PaymentIcon from "@mui/icons-material/Payment";
+import Web3 from 'web3';
+import { ethers } from 'ethers';
+import { usdtAddress, usdtABI , stakingAddress , RPC, stakingABI} from './config';
+
+
+
+const web3                 = new Web3(new Web3.providers.HttpProvider(RPC));
+const usdtContract         = new web3.eth.Contract(usdtABI, usdtAddress);
+const stakingContract      = new web3.eth.Contract(stakingABI, stakingAddress);
+
+
 
 class Deposit extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      amount: 0.1,
-      address: "",
+      amountDeposit: 0,
+      sponserAddress: "",
+      withdrawDate : '',
+      claimable    : 0,
+      linkedAccount : '',
+
+      linkedWalletBNBBalance : 0,
+      linkedWalletUSDTBalance : 0,
+      linkedWalletDepositAmount : 0,
+      linkedWalleTotalEarning : 0,
+      linkedWalletNextWithdrawDate : 0,
+      linkedWalletClaimable :0,
+
+      metamaskWeb3 : []
     };
     this.handleAmount = this.handleAmount.bind(this);
     this.handleAddress = this.handleAddress.bind(this);
   }
+
+  async walletConnect(){
+    try {
+      await window.ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: web3.utils.toHex(5) }],
+      });
+    } catch (switchError) {
+      // This error code indicates that the chain has not been added to MetaMask.
+      if (switchError.code === 4902) {
+        try {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [
+              {
+                chainId:  web3.utils.toHex(56),
+                chainName: 'Goerli test network',
+                rpcUrls: ['https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161'],
+                nativeCurrency: {
+                  name: "GoerliETH",
+                  symbol: "GoerliETH", // 2-6 characters long
+                  decimals: 18,
+                },
+                blockExplorerUrls : "https://goerli.etherscan.io",
+              },
+            ],
+          });
+
+          await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: web3.utils.toHex(5) }],
+          });
+
+        } catch (addError) {
+        }
+      }
+    }
+  
+        if(window.ethereum) {
+          window.web3 = new Web3(window.ethereum)
+          await window.ethereum.enable()
+          const clientWeb3    = window.web3;
+
+          const accounts = await clientWeb3.eth.getAccounts();
+          this.setState({
+              linkedAccount : accounts[0],
+              metamaskWeb3 : clientWeb3
+          }) 
+        } 
+        else if(window.web3) {
+            window.web3 = new Web3(window.web3.currentProvider)
+            const clientWeb3    = window.web3;
+            const accounts = await clientWeb3.eth.getAccounts();
+            this.setState({
+                linkedAccount : accounts[0],
+                metamaskWeb3 : clientWeb3
+            }) 
+        } 
+        if(this.state.linkedAccount === ''){
+            return
+        }
+
+
+        const { ethereum } = window;
+        ethereum.on('accountsChanged',  async(accounts) => {
+          try{
+            accounts =   web3.utils.toChecksumAddress(accounts + '')
+          }catch(err){
+          }
+          
+          this.setState({
+            linkedAccount : accounts
+          })
+          this.checkDashBoard(this.state.linkedAccount)
+        });
+
+        ethereum.on('chainChanged', async(chainId) => {
+          await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: web3.utils.toHex(5) }],
+          });
+        });
+        this.checkDashBoard(this.state.linkedAccount) 
+  }
+
+  async checkDashBoard (address)  {
+      let bnbAmount, usdtAmount, myDeposit, totalEarning, nextWithdrawDate, claimable
+      bnbAmount = await web3.eth.getBalance(address)
+      usdtAmount = await usdtContract.methods.balanceOf(address).call()
+      let data =await stakingContract.methods.players(address).call()
+      myDeposit = data.total_invested
+      totalEarning = data.total_withdrawn
+
+
+      nextWithdrawDate = await stakingContract.methods.nextWithdraw(address).call()
+      claimable = await stakingContract.methods.computePayout(address).call()
+
+
+      this.setState({
+          linkedWalletBNBBalance : ((bnbAmount / Math.pow(10,18)).toFixed(4)) * 1 ,
+          linkedWalletUSDTBalance : ((usdtAmount/ Math.pow(10,18)).toFixed(2)) * 1,
+          linkedWalletDepositAmount : ((myDeposit / Math.pow(10,18)).toFixed(2)) * 1,
+          linkedWalleTotalEarning : (totalEarning / Math.pow(10,18)).toFixed(2) * 1,
+          linkedWalletNextWithdrawDate : nextWithdrawDate,
+          linkedWalletClaimable : (claimable / Math.pow(10, 18)).toFixed(2) * 1
+      })
+
+
+
+      
+  }   
+
+  async deposit (sponsorWallet, depositAmount) {
+    console.log(sponsorWallet, depositAmount, "22222", this.state.linkedWalletUSDTBalance)
+
+      if (this.state.linkedAccount  == "") {
+        alert ("please connect your wallet")
+        return
+      }
+
+      if (depositAmount > this.state.linkedWalletUSDTBalance ) {
+        alert ("low usdt balance!")
+        return
+      }
+
+      if (this.state.linkedWalletBNBBalance < 0.001) {
+        alert ("low bnb balance")
+        return
+      }
+
+
+      const linkedUsdtContract = new this.state.metamaskWeb3.eth.Contract(usdtABI, usdtAddress)
+      const linkedStakingContract = new this.state.metamaskWeb3.eth.Contract (stakingABI, stakingAddress)
+      await linkedStakingContract.methods.Deposit(sponsorWallet, ethers.BigNumber.from(depositAmount * Math.pow(10, 18) + '') ).send ({from:this.state.linkedAccount,})
+  }
+
+  async claim () {
+    if (this.state.linkedAccount  == "") {
+      alert ("please connect your wallet")
+      return
+    }
+    const linkedStakingContract = new this.state.metamaskWeb3.eth.Contract (stakingABI, stakingAddress)
+    await linkedStakingContract.methods.Payout().send ({from:this.state.linkedAccount,})
+  }
+
+
+  async reDeposit () {
+    
+    if (this.state.linkedAccount  == "") {
+      alert ("please connect your wallet")
+      return
+    }
+
+    const linkedStakingContract = new this.state.metamaskWeb3.eth.Contract (stakingABI, stakingAddress)
+    await linkedStakingContract.methods.Reinvest().send ({from:this.state.linkedAccount,})
+  }
+
+
   handleAmount = (event) => {
     this.setState({
-      amount: event.target.value,
+      amountDeposit: event.target.value,
     });
   };
   handleAddress = (event) => {
     this.setState({
-      address: event.target.value,
+      sponserAddress: event.target.value,
     });
   };
+
+
   renderer = ({ days, hours, minutes, seconds, completed }) => {
     if (completed) return <></>;
     else {
@@ -42,7 +224,11 @@ class Deposit extends React.Component {
   };
 
   render() {
+
+
     return (
+
+      
       <Box className="content">
         <Stack
           flexDirection={{ sm: "row", xs: "column" }}
@@ -65,9 +251,21 @@ class Deposit extends React.Component {
             }}
           >
             <PermIdentityIcon sx={{ fontSize: "100px" }} />
+            
             <Typography sx={{ color: "#A888BB", mt: 2 }}>
-              0x3c0a63...6D0109
+              {this.state.linkedAccount.slice(0,7)}...{this.state.linkedAccount.slice(35,42)}
             </Typography>
+            <Button
+                variant="contained"
+                sx={{
+                  backgroundColor: "#26A1F9",
+                  color: "white",
+                  p: 1,
+                  px: 3,
+                  mx: "auto",
+                }}
+                onClick = { () => this.walletConnect()}
+            > Wallet Connect</Button>
           </Box>
           <Box sx={{ flex: 3 }}>
             <Box
@@ -98,7 +296,7 @@ class Deposit extends React.Component {
                 >
                   <AccountBalanceWalletOutlinedIcon sx={{ fontSize: "50px" }} />
                   <Box sx={{ px: 2 }}>
-                    <Typography variant="h6">1000 BNB</Typography>
+                    <Typography variant="h6">{this.state.linkedWalletBNBBalance} BNB</Typography>
                     <Typography sx={{ opacity: "0.5" }}>
                       Wallet BNB Balance
                     </Typography>
@@ -120,9 +318,9 @@ class Deposit extends React.Component {
                 >
                   <AccountBalanceWalletOutlinedIcon sx={{ fontSize: "50px" }} />
                   <Box sx={{ px: 2 }}>
-                    <Typography variant="h6">1000 USDT</Typography>
+                    <Typography variant="h6">{this.state.linkedWalletUSDTBalance} BUSD</Typography>
                     <Typography sx={{ opacity: "0.5" }}>
-                      Wallet USDT Balance
+                      Wallet BUSD Balance
                     </Typography>
                   </Box>
                 </Box>
@@ -156,7 +354,7 @@ class Deposit extends React.Component {
                 >
                   <PaymentIcon sx={{ fontSize: "50px" }} />
                   <Box sx={{ px: 2 }}>
-                    <Typography variant="h6">1000 BNB</Typography>
+                    <Typography variant="h6">{this.state.linkedWalletDepositAmount} BUSD</Typography>
                     <Typography sx={{ opacity: "0.5" }}>My Deposit</Typography>
                   </Box>
                 </Box>
@@ -176,7 +374,7 @@ class Deposit extends React.Component {
                 >
                   <PaymentIcon sx={{ fontSize: "50px" }} />
                   <Box sx={{ px: 2 }}>
-                    <Typography variant="h6">1000 USDT</Typography>
+                    <Typography variant="h6">{this.state.linkedWalleTotalEarning} BUSD</Typography>
                     <Typography sx={{ opacity: "0.5" }}>
                       Total Earning
                     </Typography>
@@ -217,10 +415,10 @@ class Deposit extends React.Component {
                   backgroundColor: "white",
                   "& fieldset": { border: "solid 1px white !important" },
                 }}
-                value={this.state.amount}
+                value={this.state.amountDeposit}
                 onChange={this.handleAmount}
                 endAdornment={
-                  <InputAdornment position="end">USDT</InputAdornment>
+                  <InputAdornment position="end">BUSD</InputAdornment>
                 }
               />
             </Box>
@@ -236,7 +434,7 @@ class Deposit extends React.Component {
                   backgroundColor: "white",
                   "& fieldset": { border: "solid 1px white !important" },
                 }}
-                value={this.state.address}
+                value={this.state.sponserAddress}
                 onChange={this.handleAddress}
               />
             </Box>
@@ -250,6 +448,7 @@ class Deposit extends React.Component {
                   px: 3,
                   mx: "auto",
                 }}
+                onClick = { () => this.deposit(this.state.sponserAddress, this.state.amountDeposit)}
               >
                 Deposit
               </Button>
@@ -285,7 +484,7 @@ class Deposit extends React.Component {
               <Typography variant="h6" sx={{ opacity: "0.5" }}>
                 Withdraw Time
               </Typography>{" "}
-              <Countdown date={1675444905520} renderer={this.renderer} />
+              {this.state.linkedWalletNextWithdrawDate}
             </Box>
             <Box
               sx={{
@@ -299,7 +498,7 @@ class Deposit extends React.Component {
               <Typography variant="h6" sx={{ opacity: "0.5" }}>
                 Claimable
               </Typography>
-              <Typography variant="h6">1000 USDT</Typography>
+              <Typography variant="h6">{this.state.linkedWalletClaimable} BUSD</Typography>
             </Box>
             <Box
               sx={{
@@ -317,6 +516,7 @@ class Deposit extends React.Component {
                   px: 3,
                   mx: "auto",
                 }}
+                onClick = { () => this.claim()}
               >
                 Claim
               </Button>
@@ -329,6 +529,7 @@ class Deposit extends React.Component {
                   px: 3,
                   mx: "auto",
                 }}
+                onClick = { () => this.reDeposit()}
               >
                 Re-Deposit
               </Button>
