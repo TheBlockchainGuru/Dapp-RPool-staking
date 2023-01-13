@@ -76,7 +76,7 @@ class AccordionCom extends React.Component {
             <AccordionDetails>
               <Typography>
                 You need to fund either a Metamask wallet or a Trust wallet with
-                a minimum of 100 usdt bep20. Along with at least 0.005 BNB for
+                a minimum of 100 BUSD bep20. Along with at least 0.005 BNB for
                 network fees. Once you have done so you can then do your deposit
                 directly from our website or via our smart contract. Please
                 understand that there is also a 1% dev fee on all deposits and
@@ -94,7 +94,7 @@ class AccordionCom extends React.Component {
             <AccordionDetails>
               <Typography>
                 No, under no circumstance do we make any guarantees. Our smart
-                contracts reward you with up to 2% daily on your full deposit.
+                contracts reward you with up to 0.5% daily on your full deposit.
                 This means there may be weeks where you are rewarded with .5 a
                 day or even less. This can change from week to week based upon
                 what is produced through LP staking and bot trading.
@@ -111,7 +111,7 @@ class AccordionCom extends React.Component {
             </AccordionSummary>
             <AccordionDetails>
               <Typography>
-                Yes, the minimum withdrawal amount is 50 USDT. You may only
+                Yes, the minimum withdrawal amount is 50 BUSD. You may only
                 withdraw once per week (every 7 days). Once you have done your
                 first withdrawal, a timer will appear on your dashboard counting
                 down from 7 days so you know exactly when you can do your next
@@ -131,21 +131,7 @@ class AccordionCom extends React.Component {
             <AccordionDetails>
               <Typography>
                 Yes you can request a full deposit refund. The process is
-                simple. First, you need to fill out the “contact us form” below
-                providing us with three things. The name of the contract you
-                deposited on (for example, bsc contract, tron contract, or
-                polygon contract), the wallet address used to make deposits onto
-                our smart contract, and a screen shot showing the inside of your
-                wallet showing proof the wallet belongs to you. Once you have
-                submitted the “contact us form” with all those details it will
-                then take 3-5 days for us to process your refund at which point
-                it will be sent directly to your wallet. Please understand that
-                you may only request a full deposit refund after 15 days of your
-                initial deposit. Also, please understand once you have received
-                a full deposit refund your wallet will be banned from our
-                contract. This means you can no longer use that wallet address
-                to make any deposits If you decide to come back later. You would
-                need to use a whole new wallet address to make a new deposit.
+                simple. please visit Discord community and contact us!
               </Typography>
             </AccordionDetails>
           </Accordion>

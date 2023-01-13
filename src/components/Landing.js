@@ -25,6 +25,7 @@ class Message extends React.Component {
             sx={{
               fontWeight: 700,
               fontSize: { xs: "35px", sm: "45px" },
+              color : "#101359"
             }}
           >
             STAKE YOUR BUSD AND GET YOUR REWARD DAILY !
@@ -36,6 +37,7 @@ class Message extends React.Component {
               lineHeight: "normal",
               mx: "auto",
               mt: 3,
+              color : "#101359"
             }}
           >
             JOIN OUR COMMUNITY OF EXCLUSIVE INVESTORS AS WE STRIVE FOR

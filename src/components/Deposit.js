@@ -1,10 +1,12 @@
 import React from "react";
+
 import { Button, Typography } from "@mui/material";
 import OutlinedInput from "@mui/material/OutlinedInput";
 import InputAdornment from "@mui/material/InputAdornment";
 import { Box, Stack } from "@mui/material";
 import PermIdentityIcon from "@mui/icons-material/PermIdentity";
 import AccountBalanceWalletOutlinedIcon from "@mui/icons-material/AccountBalanceWalletOutlined";
+import CircularProgress from '@mui/material/CircularProgress';
 import PaymentIcon from "@mui/icons-material/Payment";
 import Totalinfo from "./Totalinfo";
 import Info from "./Info";
@@ -37,14 +39,18 @@ class Deposit extends React.Component {
       claimable: 0,
       linkedAccount: "",
 
-      linkedWalletBNBBalance: 0,
-      linkedWalletUSDTBalance: 0,
-      linkedWalletDepositAmount: 0,
-      linkedWalleTotalEarning: 0,
-      linkedWalletNextWithdrawDate: 0,
-      linkedWalletClaimable: 0,
+      linkedWalletBNBBalance: "___",
+      linkedWalletUSDTBalance: "___",
+      linkedWalletDepositAmount: "___",
+      linkedWalleTotalEarning: "___",
+      linkedWalletNextWithdrawDate: "___",
+      linkedWalletClaimable: "___",
 
+      allowance : 0,
+      isApproved : false,
       metamaskWeb3: [],
+
+      isINTransaction : false
     };
     this.handleAmount = this.handleAmount.bind(this);
     this.handleAddress = this.handleAddress.bind(this);
@@ -52,6 +58,11 @@ class Deposit extends React.Component {
 
   async componentWillMount() {
     this.walletConnect();
+    setInterval(() => {
+      if (this.state.linkedAccount != ""){
+        this.checkDashBoard(this.state.linkedAccount)
+      }
+    }, 5000);
   }
 
   async walletConnect() {
@@ -136,18 +147,23 @@ class Deposit extends React.Component {
   }
 
   async checkDashBoard(address) {
+    console.log("start check dashboard")
     let bnbAmount,
       usdtAmount,
       myDeposit,
       totalEarning,
       nextWithdrawDate,
-      claimable;
-    bnbAmount = await web3.eth.getBalance(address);
-    usdtAmount = await usdtContract.methods.balanceOf(address).call();
-    let data = await stakingContract.methods.players(address).call();
+      claimable,
+      allowance,
+      isApproved
+    bnbAmount  =  await web3.eth.getBalance(address);
+    usdtAmount =  await usdtContract.methods.balanceOf(address).call();
+    let data   =  await stakingContract.methods.players(address).call();
+    allowance   =  await usdtContract.methods.allowance(this.state.linkedAccount, stakingAddress).call()
+    isApproved = allowance / 1 > this.state.amountDeposit + Math.pow(10,18)
+
     myDeposit = data.total_invested;
     totalEarning = data.total_withdrawn;
-
     nextWithdrawDate = await stakingContract.methods
       .nextWithdraw(address)
       .call();
@@ -160,17 +176,61 @@ class Deposit extends React.Component {
       linkedWalleTotalEarning: (totalEarning / Math.pow(10, 18)).toFixed(2) * 1,
       linkedWalletNextWithdrawDate: nextWithdrawDate,
       linkedWalletClaimable: (claimable / Math.pow(10, 18)).toFixed(2) * 1,
+      allowance : allowance,
+      isApproved : isApproved
     });
   }
 
-  async deposit(sponsorWallet, depositAmount) {
-    console.log(
-      sponsorWallet,
-      depositAmount,
-      "22222",
-      this.state.linkedWalletUSDTBalance
-    );
+  async approve(depositAmount){
+      if (this.state.linkedAccount == "") {
+        NotificationManager.error("Please connect your wallet", "Wallet", 2000);
+        return;
+      }
 
+      if (depositAmount > this.state.linkedWalletUSDTBalance) {
+        NotificationManager.error("Low USDT Balance!", "Balance", 2000);
+        return;
+      }
+
+      if (this.state.linkedWalletBNBBalance < 0.001) {
+        NotificationManager.error("Low BNB Balance!", "Balance", 2000);
+        return;
+      }
+
+      if (this.state.sponserAddress == "") {
+        NotificationManager.error(
+          "Please Add Sponsor's Address",
+          "Sponser Address",
+          2000
+        );
+      }
+
+      const linkedUsdtContract = new this.state.metamaskWeb3.eth.Contract(
+        usdtABI,
+        usdtAddress
+      );
+
+      this.setState({
+        isINTransaction : true
+      })
+      await linkedUsdtContract.methods
+      .approve(
+        stakingAddress,
+        ethers.BigNumber.from(depositAmount * Math.pow(10, 18) + "")
+      )
+      .send({ from: this.state.linkedAccount })
+      .once("confirmation", async () => {
+        NotificationManager.success("Approved!", "Success", 2000);
+        this.deposit(this.state.sponserAddress, this.state.amountDeposit);
+        this.setState({
+          isINTransaction : true
+        })
+      });
+
+
+  }
+
+  async deposit(sponsorWallet, depositAmount) {
     if (this.state.linkedAccount == "") {
       NotificationManager.error("Please connect your wallet", "Wallet", 2000);
       return;
@@ -194,47 +254,67 @@ class Deposit extends React.Component {
       );
     }
 
-    const linkedUsdtContract = new this.state.metamaskWeb3.eth.Contract(
-      usdtABI,
-      usdtAddress
-    );
     const linkedStakingContract = new this.state.metamaskWeb3.eth.Contract(
       stakingABI,
       stakingAddress
     );
+    
+    this.setState({
+      isINTransaction : true
+    })
     await linkedStakingContract.methods
       .Deposit(
         sponsorWallet,
-        ethers.BigNumber.from(depositAmount * Math.pow(10, 18) + "")
+        ethers.BigNumber.from(depositAmount * Math.pow(10, 9) + "")
       )
       .send({ from: this.state.linkedAccount })
       .once("confirmation", async () => {
-        NotificationManager.success("Deposit Success", "Success", 2000);
+        NotificationManager.success("Deposit Transaction has beed conr", "Success", 2000);
         this.checkDashBoard();
+        this.setState({
+          isINTransaction : false
+        })
       });
   }
 
   async claim() {
+
+
     if (this.state.linkedAccount == "") {
       NotificationManager.error("Please connect your wallet", "Wallet", 2000);
       return;
     }
+
+    if (this.state.linkedWalletClaimable < 50) {
+      NotificationManager.error("Claimable should be over 50BUSD", "Low Claimable", 2000);
+      return;
+    }
+
+
     const linkedStakingContract = new this.state.metamaskWeb3.eth.Contract(
       stakingABI,
       stakingAddress
     );
+
+    this.setState({
+      isINTransaction : true
+    })
+
     await linkedStakingContract.methods
       .Payout()
       .send({ from: this.state.linkedAccount })
       .once("confirmation", async () => {
         NotificationManager.success("Deposit Success", "Success", 2000);
         this.checkDashBoard();
+        this.setState({
+          isINTransaction : true
+        })
       });
   }
 
   async reDeposit() {
     if (this.state.linkedAccount == "") {
-      NotificationManager.error("Please connect your wallet", "Wallet", 2000);
+      NotificationManager.error("Please connect your wallet", "Error", 2000);
       return;
     }
 
@@ -242,12 +322,18 @@ class Deposit extends React.Component {
       stakingABI,
       stakingAddress
     );
+    this.setState({
+      isINTransaction : true
+    })
     await linkedStakingContract.methods
       .Reinvest()
       .send({ from: this.state.linkedAccount })
       .once("confirmation", async () => {
         NotificationManager.success("Deposit Success", "Success", 2000);
         this.checkDashBoard();
+        this.setState({
+          isINTransaction : true
+        })
       });
   }
 
@@ -256,6 +342,7 @@ class Deposit extends React.Component {
       amountDeposit: event.target.value,
     });
   };
+
   handleAddress = (event) => {
     this.setState({
       sponserAddress: event.target.value,
@@ -280,8 +367,34 @@ class Deposit extends React.Component {
       <Box>
         <Totalinfo />
         <Info />
+        <br/>
+
 
         <Box className="content">
+          <Button sx={{width:"100%"}} component="a" target="_blank" href="https://pancakeswap.finance/swap?outputCurrency=0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56">
+            <Box
+                sx={{
+                  flex: 1,
+                  color: "white",
+                  backgroundColor: "#30224e",
+                  border: "solid 2px #7b85e0",
+                  borderRadius: "15px",
+                  p: 3,
+                  textAlign: "center",
+                  display: "flex",
+                  flexDirection: "row",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  boxShadow: "10px 10px 20px -4px rgb(255 255 255 / 20%)",
+                }}
+              >
+              <Box component="img" src="./pancakeswapIcon.png" height={50} />
+              <Typography variant="h6" sx={{ ml:6 }}>
+                Click here to visit Pancakeswap and buy $BUSD!
+              </Typography>
+            </Box>
+          </Button>
+
           <Stack
             flexDirection={{ sm: "row", xs: "column" }}
             gap={5}
@@ -305,7 +418,7 @@ class Deposit extends React.Component {
             >
               <PermIdentityIcon sx={{ fontSize: "100px" }} />
 
-              <Typography sx={{ color: "#A888BB", mt: 2 }}>
+              <Typography sx={{ mt: 2 }}>
                 {this.state.linkedAccount.slice(0, 7)}...
                 {this.state.linkedAccount.slice(35, 42)}
               </Typography>
@@ -313,6 +426,7 @@ class Deposit extends React.Component {
                 variant="contained"
                 sx={{
                   backgroundColor: "#26A1F9",
+                  display:this.state.linkedAccount == ""? "block":"none",
                   color: "white",
                   p: 1,
                   px: 3,
@@ -323,6 +437,7 @@ class Deposit extends React.Component {
                 {" "}
                 Wallet Connect
               </Button>
+
             </Box>
             <Box sx={{ flex: 3 }}>
               <Box
@@ -522,14 +637,14 @@ class Deposit extends React.Component {
                     px: 3,
                     mx: "auto",
                   }}
-                  onClick={() =>
+                  onClick={this.state.isApproved?() =>
                     this.deposit(
                       this.state.sponserAddress,
                       this.state.amountDeposit
-                    )
+                    ):this.approve
                   }
                 >
-                  Deposit
+                  {this.state.isApproved?"Deposit":"Approve"}{this.state.isINTransaction?<CircularProgress color="inherit"  size={"20px"}/>:""}
                 </Button>
               </Box>
             </Box>
@@ -600,7 +715,7 @@ class Deposit extends React.Component {
                   }}
                   onClick={() => this.claim()}
                 >
-                  Claim
+                  Claim {this.state.isINTransaction?<CircularProgress color="inherit"  size={"20px"}/>:""}
                 </Button>
                 <Button
                   variant="contained"
@@ -613,7 +728,7 @@ class Deposit extends React.Component {
                   }}
                   onClick={() => this.reDeposit()}
                 >
-                  Re-Deposit
+                  Re-Deposit {this.state.isINTransaction?<CircularProgress color="inherit"  size={"20px"}/>:""}
                 </Button>
               </Box>
             </Box>
