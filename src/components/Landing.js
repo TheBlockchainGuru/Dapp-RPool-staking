@@ -13,31 +13,29 @@ class Message extends React.Component {
           backgroundSize: "cover",
           backgroundRepeat: "no-repeat",
           height: "600px",
+          display: "flex",
         }}
       >
         <Header />
-        <Box className="content">
-          <Box
-            sx={{
-              backgroundColor: "#050819",
-              color: "#A888BB",
-              p: 3,
-              boxShadow: "10px 10px #0508196b",
-            }}
-          >
-            <Typography variant="h6" sx={{ fontFamily: "DM Sans" }}>
-              TOTAL LOCKED VALUE
-            </Typography>
-            <Typography variant="h5" sx={{ mt: 2, fontFamily: "DM Sans" }}>
-              $200,000
-            </Typography>
-          </Box>
+        <Box
+          className="content"
+          sx={{ my: "auto", display: "flex", flexDirection: "column" }}
+        >
           <Typography
             sx={{
-              mt: 8,
               fontWeight: 700,
-              fontSize: { xs: "25px", sm: "35px" },
+              fontSize: { xs: "35px", sm: "45px" },
+            }}
+          >
+            STAKE YOUR BUSD AND GET YOUR REWARD DAILY !
+          </Typography>
+          <Typography
+            sx={{
+              width: "80%",
+              fontSize: { xs: "10px", sm: "20px" },
               lineHeight: "normal",
+              mx: "auto",
+              mt: 3,
             }}
           >
             JOIN OUR COMMUNITY OF EXCLUSIVE INVESTORS AS WE STRIVE FOR
