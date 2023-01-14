@@ -29,7 +29,7 @@ class Header extends React.Component {
               justifyContent: "space-between",
             }}
           >
-            <Box component="img" src="./logo.png" height={80} />
+            <Box component="img" src="./logo.png" height={50} />
           </Toolbar>
         </AppBar>
       </Box>

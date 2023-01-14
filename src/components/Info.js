@@ -7,8 +7,8 @@ class Info extends React.Component {
     return (
       <Box
         sx={{
-          background:
-            "linear-gradient(90deg, rgb(16 19 89) 0%, rgba(9,9,121,1) 25%, rgba(0,212,255,1) 100%)",
+          // background:
+          //   "linear-gradient(90deg, rgb(16 19 89) 0%, rgba(9,9,121,1) 25%, rgba(0,212,255,1) 100%)",
         }}
       >
         <Stack
@@ -50,7 +50,7 @@ class Info extends React.Component {
               variant="h5"
               sx={{ textAlign: "left", my: 3, fontWeight: 700 }}
             >
-              SMART CONTRACT POOL
+              SMARTCONTRACT POOL
             </Typography>
             <Typography variant="h6" sx={{ textAlign: "left", my: 3 }}>
               A smart contract pool offering up to 0.5% daily with the ability

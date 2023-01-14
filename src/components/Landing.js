@@ -9,10 +9,10 @@ class Message extends React.Component {
       <Box
         sx={{
           width: "100%",
-          backgroundImage: "url('./back.gif')",
+          backgroundImage: "url('./background.png')",
           backgroundSize: "cover",
           backgroundRepeat: "no-repeat",
-          height: "600px",
+          height: "100vh",
           display: "flex",
         }}
       >
@@ -24,12 +24,23 @@ class Message extends React.Component {
           <Typography
             sx={{
               fontWeight: 700,
-              fontSize: { xs: "35px", sm: "45px" },
-              color : "#101359"
+              fontSize: { xs: "30px", sm: "3.5vw" },
+              color : "#cccccc",
             }}
           >
-            STAKE YOUR BUSD AND GET YOUR REWARD DAILY !
+            Enabling a new
           </Typography>
+
+          <Typography
+            sx={{
+              fontWeight: 700,
+              fontSize: { xs: "30px", sm: "5vw" },
+            }}
+            className="custom-font"
+          >
+            Rugpool Economy
+          </Typography>
+
           <Typography
             sx={{
               width: "80%",
@@ -37,7 +48,7 @@ class Message extends React.Component {
               lineHeight: "normal",
               mx: "auto",
               mt: 3,
-              color : "#101359"
+              color : "#ffffff"
             }}
           >
             JOIN OUR COMMUNITY OF EXCLUSIVE INVESTORS AS WE STRIVE FOR

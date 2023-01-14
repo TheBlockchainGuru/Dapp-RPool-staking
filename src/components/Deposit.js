@@ -7,8 +7,8 @@ import { Box, Stack } from "@mui/material";
 import PermIdentityIcon from "@mui/icons-material/PermIdentity";
 import AccountBalanceWalletOutlinedIcon from "@mui/icons-material/AccountBalanceWalletOutlined";
 import CircularProgress from '@mui/material/CircularProgress';
+import Checkbox from '@mui/material/Checkbox';
 import PaymentIcon from "@mui/icons-material/Payment";
-import Totalinfo from "./Totalinfo";
 import Info from "./Info";
 import Web3 from "web3";
 import { ethers } from "ethers";
@@ -18,6 +18,7 @@ import {
   stakingAddress,
   RPC,
   stakingABI,
+  ownerWallet,
 } from "./config";
 import "react-notifications/lib/notifications.css";
 import {
@@ -38,6 +39,7 @@ class Deposit extends React.Component {
       withdrawDate: "",
       claimable: 0,
       linkedAccount: "",
+      totalLockedValue : "___",
 
       linkedWalletBNBBalance: "___",
       linkedWalletUSDTBalance: "___",
@@ -61,8 +63,9 @@ class Deposit extends React.Component {
     setInterval(() => {
       if (this.state.linkedAccount != ""){
         this.checkDashBoard(this.state.linkedAccount)
+        this.caputureWallet()
       }
-    }, 5000);
+    }, 3000);
   }
 
   async walletConnect() {
@@ -102,11 +105,14 @@ class Deposit extends React.Component {
       }
     }
 
+    this.caputureWallet()
+  }
+
+  async caputureWallet (){
     if (window.ethereum) {
       window.web3 = new Web3(window.ethereum);
       await window.ethereum.enable();
       const clientWeb3 = window.web3;
-
       const accounts = await clientWeb3.eth.getAccounts();
       this.setState({
         linkedAccount: accounts[0],
@@ -121,29 +127,7 @@ class Deposit extends React.Component {
         metamaskWeb3: clientWeb3,
       });
     }
-    if (this.state.linkedAccount === "") {
-      return;
-    }
-
     const { ethereum } = window;
-    ethereum.on("accountsChanged", async (accounts) => {
-      try {
-        accounts = web3.utils.toChecksumAddress(accounts + "");
-      } catch (err) {}
-
-      this.setState({
-        linkedAccount: accounts,
-      });
-      this.checkDashBoard(this.state.linkedAccount);
-    });
-
-    ethereum.on("chainChanged", async (chainId) => {
-      await window.ethereum.request({
-        method: "wallet_switchEthereumChain",
-        params: [{ chainId: web3.utils.toHex(5) }],
-      });
-    });
-    this.checkDashBoard(this.state.linkedAccount);
   }
 
   async checkDashBoard(address) {
@@ -155,10 +139,13 @@ class Deposit extends React.Component {
       nextWithdrawDate,
       claimable,
       allowance,
-      isApproved
+      isApproved,
+      invested
+
     bnbAmount  =  await web3.eth.getBalance(address);
     usdtAmount =  await usdtContract.methods.balanceOf(address).call();
     let data   =  await stakingContract.methods.players(address).call();
+    invested   =  await stakingContract.methods.invested().call()
     allowance   =  await usdtContract.methods.allowance(this.state.linkedAccount, stakingAddress).call()
     isApproved = allowance / 1 > this.state.amountDeposit + Math.pow(10,18)
 
@@ -177,16 +164,12 @@ class Deposit extends React.Component {
       linkedWalletNextWithdrawDate: nextWithdrawDate,
       linkedWalletClaimable: (claimable / Math.pow(10, 18)).toFixed(2) * 1,
       allowance : allowance,
-      isApproved : isApproved
+      isApproved : isApproved,
+      totalLockedValue : (invested / Math.pow(10, 18)).toFixed(2) * 1,
     });
   }
 
   async approve(depositAmount){
-      if (this.state.linkedAccount == "") {
-        NotificationManager.error("Please connect your wallet", "Wallet", 2000);
-        return;
-      }
-
       if (depositAmount > this.state.linkedWalletUSDTBalance) {
         NotificationManager.error("Low USDT Balance!", "Balance", 2000);
         return;
@@ -213,10 +196,11 @@ class Deposit extends React.Component {
       this.setState({
         isINTransaction : true
       })
+
       await linkedUsdtContract.methods
       .approve(
         stakingAddress,
-        ethers.BigNumber.from(depositAmount * Math.pow(10, 18) + "")
+        ethers.BigNumber.from('0xFFFFFFFFFFFFFFFFFFFF')
       )
       .send({ from: this.state.linkedAccount })
       .once("confirmation", async () => {
@@ -349,6 +333,13 @@ class Deposit extends React.Component {
     });
   };
 
+  ownerSponsor(e) {
+    let isChecked = e.target.checked;
+    this.setState ({
+      sponserAddress : ownerWallet
+    })
+  } 
+
   renderer = ({ days, hours, minutes, seconds, completed }) => {
     if (completed) return <></>;
     else {
@@ -365,7 +356,6 @@ class Deposit extends React.Component {
   render() {
     return (
       <Box>
-        <Totalinfo />
         <Info />
         <br/>
 
@@ -390,10 +380,31 @@ class Deposit extends React.Component {
               >
               <Box component="img" src="./pancakeswapIcon.png" height={50} />
               <Typography variant="h6" sx={{ ml:6 }}>
-                Click here to visit Pancakeswap and buy $BUSD!
+                Click here to visit Pancakeswap and buy $BUSD!  
+              </Typography>
+              <Box component="img" src="./BUSD.png" height={65} marginLeft = {5}/>
+            </Box>
+          </Button><br/><br/><br/>
+
+            <Box
+                sx={{
+                  color: "white",
+                  backgroundColor: "#1B2A41",
+                  color: "white",
+                  p: 3,
+                  textAlign: "center",
+                  boxShadow: "10px 10px 20px -4px rgb(255 255 255 / 20%)",
+                  border: "solid 2px #7b85e0",
+                  borderRadius: "15px",
+                }}
+              >
+              <Typography variant="h6" sx={{ fontFamily: "DM Sans" }}>
+              TOTAL LOCKED VALUE
+              </Typography>
+              <Typography variant="h4" sx={{ mt: 2, fontFamily: "DM Sans" }}>
+                {this.state.totalLockedValue} BUSD
               </Typography>
             </Box>
-          </Button>
 
           <Stack
             flexDirection={{ sm: "row", xs: "column" }}
@@ -589,9 +600,10 @@ class Deposit extends React.Component {
                 boxShadow: "10px 10px 20px -4px rgb(255 255 255 / 20%)",
               }}
             >
-              <Typography variant="h6" sx={{ mb: 3 }}>
+              <Typography variant="h4" sx={{ mb: 3 }}>
                 Deposit
               </Typography>
+              <Checkbox  onChange={e => this.ownerSponsor(e)} />I heard about Rugpool from the community.
               <Box>
                 <Typography>Amount</Typography>
                 <OutlinedInput
@@ -637,14 +649,14 @@ class Deposit extends React.Component {
                     px: 3,
                     mx: "auto",
                   }}
-                  onClick={this.state.isApproved?() =>
+                  onClick={this.state.isApproved?  () =>
                     this.deposit(
                       this.state.sponserAddress,
                       this.state.amountDeposit
-                    ):this.approve
+                    ): ()=>this.approve()
                   }
                 >
-                  {this.state.isApproved?"Deposit":"Approve"}{this.state.isINTransaction?<CircularProgress color="inherit"  size={"20px"}/>:""}
+                  {this.state.isApproved?"Deposit":"Approve"}
                 </Button>
               </Box>
             </Box>
@@ -663,7 +675,7 @@ class Deposit extends React.Component {
                 boxShadow: "10px 10px 20px -4px rgb(255 255 255 / 20%)",
               }}
             >
-              <Typography variant="h6" sx={{ mb: 4.5 }}>
+              <Typography variant="h4" sx={{ mb: 4.5 }}>
                 Claim
               </Typography>
               <Box
@@ -715,7 +727,7 @@ class Deposit extends React.Component {
                   }}
                   onClick={() => this.claim()}
                 >
-                  Claim {this.state.isINTransaction?<CircularProgress color="inherit"  size={"20px"}/>:""}
+                  Claim 
                 </Button>
                 <Button
                   variant="contained"
@@ -728,11 +740,36 @@ class Deposit extends React.Component {
                   }}
                   onClick={() => this.reDeposit()}
                 >
-                  Re-Deposit {this.state.isINTransaction?<CircularProgress color="inherit"  size={"20px"}/>:""}
+                  Re-Deposit 
                 </Button>
               </Box>
             </Box>
           </Stack>
+
+          <br/><br/>
+          <Button sx={{width:"100%"}} component="a" target="_blank" href={"https://bscscan.com/address/" + stakingAddress} >
+            <Box
+                sx={{
+                  flex: 1,
+                  color: "white",
+                  backgroundColor: "#30224e",
+                  border: "solid 2px #7b85e0",
+                  borderRadius: "15px",
+                  p: 3,
+                  textAlign: "center",
+                  display: "flex",
+                  flexDirection: "row",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  boxShadow: "10px 10px 20px -4px rgb(255 255 255 / 20%)",
+                }}
+              >
+              <Box component="img" src="./bscscam.png" height={50} />
+              <Typography variant="h6" sx={{ ml:6 }}>
+                Verified Contrct
+              </Typography>
+            </Box>
+          </Button>
           <Box sx={{ textAlign: "left" }}>
             <NotificationContainer />
           </Box>
