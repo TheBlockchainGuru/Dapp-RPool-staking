@@ -1,5 +1,5 @@
 import React from "react";
-import Header from "./Header";
+
 import { Box } from "@mui/system";
 import { Typography } from "@mui/material";
 
@@ -9,14 +9,13 @@ class Message extends React.Component {
       <Box
         sx={{
           width: "100%",
-          backgroundImage: "url('./background.png')",
+          backgroundImage: "url('./back3.gif')",
           backgroundSize: "cover",
           backgroundRepeat: "no-repeat",
           height: "100vh",
           display: "flex",
         }}
       >
-        <Header />
         <Box
           className="content"
           sx={{ my: "auto", display: "flex", flexDirection: "column" }}
@@ -24,31 +23,21 @@ class Message extends React.Component {
           <Typography
             sx={{
               fontWeight: 700,
-              fontSize: { xs: "30px", sm: "3.5vw" },
-              color : "#cccccc",
-            }}
-          >
-            Enabling a new
-          </Typography>
-
-          <Typography
-            sx={{
-              fontWeight: 700,
-              fontSize: { xs: "30px", sm: "5vw" },
+              fontSize: { xs: "30px", sm: "10vw" },
             }}
             className="custom-font"
           >
-            Rugpool Economy
+            RUGPOOL
           </Typography>
 
           <Typography
             sx={{
               width: "80%",
-              fontSize: { xs: "10px", sm: "20px" },
+              fontSize: { xs: "10px", sm: "30px" },
               lineHeight: "normal",
               mx: "auto",
               mt: 3,
-              color : "#ffffff"
+              color : "#000000"
             }}
           >
             JOIN OUR COMMUNITY OF EXCLUSIVE INVESTORS AS WE STRIVE FOR

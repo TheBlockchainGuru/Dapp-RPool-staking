@@ -27,9 +27,7 @@ class Info extends React.Component {
               REDUCING RISK IN DEFI
             </Typography>
             <Typography variant="h6" sx={{ textAlign: "left", my: 3 }}>
-              RugPool is one of the only defi projects allowing each user to
-              request a full deposit refund after 15 days of initial deposit
-              without any deductions.
+            By taking a slow and incremental approach to increasing the TVL, This allows Users to grow without the risk of rapid growth becoming overwhelming
             </Typography>
           </Box>
           <Box sx={{ flex: 1 }}>
@@ -40,9 +38,7 @@ class Info extends React.Component {
               REAL SUSTAINABILITY
             </Typography>
             <Typography variant="h6" sx={{ textAlign: "left", my: 3 }}>
-              A real defi project using AI trading bots 24 hour a day 7 days a
-              week for long term sustainability. All bots have been back tested
-              for over 6 months.
+            Our goal is to achieve a designated total value locked (TVL) and then close deposits to ensure sustainable growth for our users.
             </Typography>
           </Box>
           <Box sx={{ flex: 1 }}>
@@ -50,12 +46,10 @@ class Info extends React.Component {
               variant="h5"
               sx={{ textAlign: "left", my: 3, fontWeight: 700 }}
             >
-              SMARTCONTRACT POOL
+              THE RUGPOOL
             </Typography>
             <Typography variant="h6" sx={{ textAlign: "left", my: 3 }}>
-              A smart contract pool offering up to 0.5% daily with the ability
-              to claim rewards weekly. There are no guarantees percentages can
-              change from week to week.
+            A smart contract pool offering up to 0.5% daily with the ability to claim rewards weekly. There are no guarantees percentages can change from week to week.
             </Typography>
           </Box>
         </Stack>

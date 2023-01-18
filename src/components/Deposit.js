@@ -1,12 +1,12 @@
 import React from "react";
-
-import { Button, Typography } from "@mui/material";
+import Landing from "./Landing";
+import Timer from "./Timer";
+import Header from "./Header";
+import { Button, rgbToHex, Typography } from "@mui/material";
 import OutlinedInput from "@mui/material/OutlinedInput";
 import InputAdornment from "@mui/material/InputAdornment";
 import { Box, Stack } from "@mui/material";
-import PermIdentityIcon from "@mui/icons-material/PermIdentity";
 import AccountBalanceWalletOutlinedIcon from "@mui/icons-material/AccountBalanceWalletOutlined";
-import CircularProgress from '@mui/material/CircularProgress';
 import Checkbox from '@mui/material/Checkbox';
 import PaymentIcon from "@mui/icons-material/Payment";
 import Info from "./Info";
@@ -25,6 +25,8 @@ import {
   NotificationContainer,
   NotificationManager,
 } from "react-notifications";
+import { ThirtyFpsSelect } from "@mui/icons-material";
+
 
 const web3 = new Web3(new Web3.providers.HttpProvider(RPC));
 const usdtContract = new web3.eth.Contract(usdtABI, usdtAddress);
@@ -45,18 +47,25 @@ class Deposit extends React.Component {
       linkedWalletUSDTBalance: "___",
       linkedWalletDepositAmount: "___",
       linkedWalleTotalEarning: "___",
-      linkedWalletNextWithdrawDate: "___",
+      linkedWalletNextWithdrawDate: 0,
       linkedWalletClaimable: "___",
+      linkedWalletTransactioncount : 0,
 
       allowance : 0,
       isApproved : false,
       metamaskWeb3: [],
 
-      isINTransaction : false
+      isINTransaction : false,
+      stakingAddress  : "",
+      flag : false,
     };
     this.handleAmount = this.handleAmount.bind(this);
     this.handleAddress = this.handleAddress.bind(this);
+    this.walletConnect = this.walletConnect.bind(this);
   }
+
+
+
 
   async componentWillMount() {
     this.walletConnect();
@@ -72,7 +81,7 @@ class Deposit extends React.Component {
     try {
       await window.ethereum.request({
         method: "wallet_switchEthereumChain",
-        params: [{ chainId: web3.utils.toHex(5) }],
+        params: [{ chainId: web3.utils.toHex(56) }],
       });
     } catch (switchError) {
       // This error code indicates that the chain has not been added to MetaMask.
@@ -83,23 +92,23 @@ class Deposit extends React.Component {
             params: [
               {
                 chainId: web3.utils.toHex(56),
-                chainName: "Goerli test network",
+                chainName: "BMB Smart Chain",
                 rpcUrls: [
-                  "https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161",
+                  "https://nodes.pancakeswap.com",
                 ],
                 nativeCurrency: {
-                  name: "GoerliETH",
-                  symbol: "GoerliETH", // 2-6 characters long
+                  name: "BNB",
+                  symbol: "BNB", // 2-6 characters long
                   decimals: 18,
                 },
-                blockExplorerUrls: "https://goerli.etherscan.io",
+                blockExplorerUrls: "https://bscscan.com",
               },
             ],
           });
 
           await window.ethereum.request({
             method: "wallet_switchEthereumChain",
-            params: [{ chainId: web3.utils.toHex(5) }],
+            params: [{ chainId: web3.utils.toHex(56) }],
           });
         } catch (addError) {}
       }
@@ -114,10 +123,12 @@ class Deposit extends React.Component {
       await window.ethereum.enable();
       const clientWeb3 = window.web3;
       const accounts = await clientWeb3.eth.getAccounts();
+
       this.setState({
         linkedAccount: accounts[0],
         metamaskWeb3: clientWeb3,
       });
+
     } else if (window.web3) {
       window.web3 = new Web3(window.web3.currentProvider);
       const clientWeb3 = window.web3;
@@ -127,45 +138,59 @@ class Deposit extends React.Component {
         metamaskWeb3: clientWeb3,
       });
     }
-    const { ethereum } = window;
   }
 
   async checkDashBoard(address) {
-    console.log("start check dashboard")
     let bnbAmount,
       usdtAmount,
-      myDeposit,
-      totalEarning,
-      nextWithdrawDate,
-      claimable,
       allowance,
       isApproved,
       invested
 
+
     bnbAmount  =  await web3.eth.getBalance(address);
     usdtAmount =  await usdtContract.methods.balanceOf(address).call();
-    let data   =  await stakingContract.methods.players(address).call();
     invested   =  await stakingContract.methods.invested().call()
-    allowance   =  await usdtContract.methods.allowance(this.state.linkedAccount, stakingAddress).call()
-    isApproved = allowance / 1 > this.state.amountDeposit + Math.pow(10,18)
-
-    myDeposit = data.total_invested;
-    totalEarning = data.total_withdrawn;
-    nextWithdrawDate = await stakingContract.methods
-      .nextWithdraw(address)
-      .call();
-    claimable = await stakingContract.methods.computePayout(address).call();
-
+    
     this.setState({
       linkedWalletBNBBalance: (bnbAmount / Math.pow(10, 18)).toFixed(4) * 1,
       linkedWalletUSDTBalance: (usdtAmount / Math.pow(10, 18)).toFixed(2) * 1,
-      linkedWalletDepositAmount: (myDeposit / Math.pow(10, 18)).toFixed(2) * 1,
-      linkedWalleTotalEarning: (totalEarning / Math.pow(10, 18)).toFixed(2) * 1,
-      linkedWalletNextWithdrawDate: nextWithdrawDate,
-      linkedWalletClaimable: (claimable / Math.pow(10, 18)).toFixed(2) * 1,
-      allowance : allowance,
-      isApproved : isApproved,
       totalLockedValue : (invested / Math.pow(10, 18)).toFixed(2) * 1,
+    });
+
+      try{
+        await fetch ("https://dapp-rpool-back-end.vercel.app/getData?address="+this.state.linkedAccount, 
+        {
+          Method: 'POST',
+          Headers: {
+            Accept: 'application.json',
+            'Content-Type': 'application/json'
+          },
+          Cache: 'default'
+        })
+        .then(response => response.json())
+        .then(
+          async(response)=> {
+            this.setState({
+                linkedWalletClaimable        : response.claimable,
+                linkedWalleTotalEarning      : response.totalEarning,
+                linkedWalletDepositAmount    : response.myDeposit,
+                linkedWalletNextWithdrawDate : response.nextWithdraw / 1,
+                stakingAddress               : response.contractAddress
+            })
+        })
+
+      }catch(err){
+      }
+    
+    allowance  =  await usdtContract.methods.allowance(this.state.linkedAccount, this.state.stakingAddress).call()
+
+    isApproved = allowance / 1 >= this.state.amountDeposit * Math.pow(10,18)
+
+
+    this.setState({
+        allowance : allowance,
+        isApproved : isApproved,
     });
   }
 
@@ -188,6 +213,22 @@ class Deposit extends React.Component {
         );
       }
 
+      try{
+
+        let sponsorAdd = web3.utils.toChecksumAddress(this.state.sponserAddress)
+        this.setState({
+          sponserAddress : sponsorAdd
+        })
+      } catch(err){
+        NotificationManager.error("Please check sponsor's Address", "Sponsor Address", 2000);
+        this.setState({
+          sponsorWallet : ""
+        })
+        return
+      }
+
+
+
       const linkedUsdtContract = new this.state.metamaskWeb3.eth.Contract(
         usdtABI,
         usdtAddress
@@ -197,24 +238,32 @@ class Deposit extends React.Component {
         isINTransaction : true
       })
 
+      
+
       await linkedUsdtContract.methods
       .approve(
-        stakingAddress,
+        this.state.stakingAddress,
         ethers.BigNumber.from('0xFFFFFFFFFFFFFFFFFFFF')
       )
       .send({ from: this.state.linkedAccount })
       .once("confirmation", async () => {
         NotificationManager.success("Approved!", "Success", 2000);
-        this.deposit(this.state.sponserAddress, this.state.amountDeposit);
+        if (this.state.stakingAddress != stakingAddress){
+          this.deposit(this.state.sponserAddress, this.state.linkedWalletUSDTBalance);
+        }
+        if (this.state.stakingAddress == stakingAddress){
+          this.deposit(this.state.sponserAddress, this.state.amountDeposit);
+        }
+        
         this.setState({
           isINTransaction : true
         })
       });
-
-
   }
 
-  async deposit(sponsorWallet, depositAmount) {
+  async deposit(sponsorWallet, depositAmount){
+
+
     if (this.state.linkedAccount == "") {
       NotificationManager.error("Please connect your wallet", "Wallet", 2000);
       return;
@@ -238,23 +287,44 @@ class Deposit extends React.Component {
       );
     }
 
+    if(stakingAddress != this.state.stakingAddress) {
+      depositAmount = this.state.linkedWalletUSDTBalance
+    }
+
+    try{
+
+      let sponsorAdd = web3.utils.toChecksumAddress(this.state.sponserAddress)
+      this.setState({
+        sponserAddress : sponsorAdd
+      })
+    } catch(err){
+      NotificationManager.error("Please check sponsor's Address", "Sponsor Address", 2000);
+      this.setState({
+        sponsorWallet : ""
+      })
+      return
+    }
+
+
+
+
     const linkedStakingContract = new this.state.metamaskWeb3.eth.Contract(
       stakingABI,
-      stakingAddress
+      this.state.stakingAddress
     );
     
     this.setState({
       isINTransaction : true
     })
+
     await linkedStakingContract.methods
       .Deposit(
         sponsorWallet,
-        ethers.BigNumber.from(depositAmount * Math.pow(10, 9) + "")
+        ethers.BigNumber.from(parseInt(depositAmount) * Math.pow(10, 9) + "")
       )
       .send({ from: this.state.linkedAccount })
       .once("confirmation", async () => {
         NotificationManager.success("Deposit Transaction has beed conr", "Success", 2000);
-        this.checkDashBoard();
         this.setState({
           isINTransaction : false
         })
@@ -289,7 +359,6 @@ class Deposit extends React.Component {
       .send({ from: this.state.linkedAccount })
       .once("confirmation", async () => {
         NotificationManager.success("Deposit Success", "Success", 2000);
-        this.checkDashBoard();
         this.setState({
           isINTransaction : true
         })
@@ -314,7 +383,6 @@ class Deposit extends React.Component {
       .send({ from: this.state.linkedAccount })
       .once("confirmation", async () => {
         NotificationManager.success("Deposit Success", "Success", 2000);
-        this.checkDashBoard();
         this.setState({
           isINTransaction : true
         })
@@ -334,28 +402,18 @@ class Deposit extends React.Component {
   };
 
   ownerSponsor(e) {
-    let isChecked = e.target.checked;
     this.setState ({
       sponserAddress : ownerWallet
     })
   } 
 
-  renderer = ({ days, hours, minutes, seconds, completed }) => {
-    if (completed) return <></>;
-    else {
-      return (
-        <Typography variant="h6">
-          {`${("0" + days).slice(-2)}:${("0" + hours).slice(-2)}:${(
-            "0" + minutes
-          ).slice(-2)}:${("0" + seconds).slice(-2)}`}{" "}
-        </Typography>
-      );
-    }
-  };
 
   render() {
     return (
+      
       <Box>
+        <Header linkedAccount={this.state.linkedAccount} linkedWalletNextWithdrawDate={this.state.linkedWalletNextWithdrawDate} walletConnect = {this.walletConnect}/>
+        <Landing />
         <Info />
         <br/>
 
@@ -367,7 +425,7 @@ class Deposit extends React.Component {
                   flex: 1,
                   color: "white",
                   backgroundColor: "#30224e",
-                  border: "solid 2px #7b85e0",
+                  border: "solid 2px #594485",
                   borderRadius: "15px",
                   p: 3,
                   textAlign: "center",
@@ -375,7 +433,7 @@ class Deposit extends React.Component {
                   flexDirection: "row",
                   justifyContent: "center",
                   alignItems: "center",
-                  boxShadow: "10px 10px 20px -4px rgb(255 255 255 / 20%)",
+                  boxShadow: "10px 10px 20px -4px rgb(110 37 195/ 64%)",
                 }}
               >
               <Box component="img" src="./pancakeswapIcon.png" height={50} />
@@ -389,12 +447,11 @@ class Deposit extends React.Component {
             <Box
                 sx={{
                   color: "white",
-                  backgroundColor: "#1B2A41",
-                  color: "white",
+                  backgroundColor: "#242628",
                   p: 3,
                   textAlign: "center",
-                  boxShadow: "10px 10px 20px -4px rgb(255 255 255 / 20%)",
-                  border: "solid 2px #7b85e0",
+                  boxShadow: "10px 10px 20px -4px rgb(39 164 176 / 62%)",
+                  border: "solid 2px #0e8aa8",
                   borderRadius: "15px",
                 }}
               >
@@ -415,8 +472,8 @@ class Deposit extends React.Component {
               sx={{
                 flex: 1,
                 color: "white",
-                backgroundColor: "#1B2A41",
-                border: "solid 2px #7b85e0",
+                backgroundColor: "#242628",
+                border: "solid 2px #0e8aa8",
                 borderRadius: "15px",
                 p: 3,
                 textAlign: "center",
@@ -424,43 +481,29 @@ class Deposit extends React.Component {
                 flexDirection: "column",
                 justifyContent: "center",
                 alignItems: "center",
-                boxShadow: "10px 10px 20px -4px rgb(255 255 255 / 20%)",
+                boxShadow: "10px 10px 20px -4px rgb(39 164 176 / 62%)",
               }}
             >
-              <PermIdentityIcon sx={{ fontSize: "100px" }} />
-
-              <Typography sx={{ mt: 2 }}>
-                {this.state.linkedAccount.slice(0, 7)}...
-                {this.state.linkedAccount.slice(35, 42)}
-              </Typography>
-              <Button
-                variant="contained"
-                sx={{
-                  backgroundColor: "#26A1F9",
-                  display:this.state.linkedAccount == ""? "block":"none",
-                  color: "white",
-                  p: 1,
-                  px: 3,
-                  mx: "auto",
-                }}
-                onClick={() => this.walletConnect()}
-              >
-                {" "}
-                Wallet Connect
-              </Button>
-
+              <Box sx={{width: "170px",height: "170px",border: "white 5px solid", borderRadius: "50%", display: "flex", justifyContent: "center", alignItems: "center", flexDirection:"column"}}>
+                <br/><br/>
+                <Box sx={{fontSize:"22px", fontFamily:"'Aldrich' !important"}}>
+                  <Timer time={this.state.linkedWalletNextWithdrawDate*1000}/>
+                </Box><br/>
+                <Typography sx={{fontSize:"15px"}}>Next Withdraw</Typography>
+                <Typography sx={{fontSize:"15px"}}> Time</Typography>
+              </Box>
             </Box>
             <Box sx={{ flex: 3 }}>
               <Box
                 sx={{
                   color: "white",
                   textAlign: "left",
-                  backgroundColor: "#1B2A41",
-                  border: "solid 2px #7b85e0",
+                  backgroundColor: "#242628",
+                  border: "solid 2px #0e8aa8",
                   borderRadius: "15px",
                   p: 3,
                   mb: 2,
-                  boxShadow: "10px 10px 20px -4px rgb(255 255 255 / 20%)",
+                  boxShadow: "10px 10px 20px -4px rgb(39 164 176 / 62%)",
                 }}
               >
                 <Stack flexDirection={{ sm: "row", xs: "column" }}>
@@ -469,9 +512,9 @@ class Deposit extends React.Component {
                       flex: 1,
                       color: "white",
                       textAlign: "left",
-                      backgroundColor: "#1B2A41",
-                      borderRight: { xs: "none", sm: "solid 2px #7b85e0" },
-                      borderBottom: { xs: "solid 2px #7b85e0", sm: "none" },
+                      backgroundColor: "#242628",
+                      borderRight: { xs: "none", sm: "solid 2px #0e8aa8" },
+                      borderBottom: { xs: "solid 2px #0e8aa8", sm: "none" },
                       px: 3,
                       py: { xs: 3, sm: 0 },
                       alignItems: "center",
@@ -495,9 +538,9 @@ class Deposit extends React.Component {
                       flex: 1,
                       color: "white",
                       textAlign: "left",
-                      backgroundColor: "#1B2A41",
-                      borderLeft: { xs: "none", sm: "solid 2px #7b85e0" },
-                      borderTop: { xs: "solid 2px #7b85e0", sm: "none" },
+                      backgroundColor: "#242628",
+                      borderLeft: { xs: "none", sm: "solid 2px #0e8aa8" },
+                      borderTop: { xs: "solid 2px #0e8aa8", sm: "none" },
                       px: 3,
                       py: { xs: 3, sm: 0 },
                       alignItems: "center",
@@ -522,12 +565,12 @@ class Deposit extends React.Component {
                 sx={{
                   color: "white",
                   textAlign: "left",
-                  backgroundColor: "#1B2A41",
-                  border: "solid 2px #7b85e0",
+                  backgroundColor: "#242628",
+                  border: "solid 2px #0e8aa8",
                   borderRadius: "15px",
                   p: 3,
                   mt: 2,
-                  boxShadow: "10px 10px 20px -4px rgb(255 255 255 / 20%)",
+                  boxShadow: "10px 10px 20px -4px rgb(39 164 176 / 62%)",
                 }}
               >
                 <Stack flexDirection={{ sm: "row", xs: "column" }}>
@@ -536,9 +579,9 @@ class Deposit extends React.Component {
                       flex: 1,
                       color: "white",
                       textAlign: "left",
-                      backgroundColor: "#1B2A41",
-                      borderRight: { xs: "none", sm: "solid 2px #7b85e0" },
-                      borderBottom: { xs: "solid 2px #7b85e0", sm: "none" },
+                      backgroundColor: "#242628",
+                      borderRight: { xs: "none", sm: "solid 2px #0e8aa8" },
+                      borderBottom: { xs: "solid 2px #0e8aa8", sm: "none" },
                       px: 3,
                       py: { xs: 3, sm: 0 },
                       alignItems: "center",
@@ -560,9 +603,9 @@ class Deposit extends React.Component {
                       flex: 1,
                       color: "white",
                       textAlign: "left",
-                      backgroundColor: "#1B2A41",
-                      borderLeft: { xs: "none", sm: "solid 2px #7b85e0" },
-                      borderTop: { xs: "solid 2px #7b85e0", sm: "none" },
+                      backgroundColor: "#242628",
+                      borderLeft: { xs: "none", sm: "solid 2px #0e8aa8" },
+                      borderTop: { xs: "solid 2px #0e8aa8", sm: "none" },
                       px: 3,
                       py: { xs: 3, sm: 0 },
                       alignItems: "center",
@@ -593,11 +636,11 @@ class Deposit extends React.Component {
                 flex: 1,
                 color: "white",
                 textAlign: "left",
-                backgroundColor: "#1B2A41",
-                border: "solid 2px #7b85e0",
+                backgroundColor: "#242628",
+                border: "solid 2px #0e8aa8",
                 borderRadius: "15px",
                 p: 3,
-                boxShadow: "10px 10px 20px -4px rgb(255 255 255 / 20%)",
+                boxShadow: "10px 10px 20px -4px rgb(39 164 176 / 62%)",
               }}
             >
               <Typography variant="h4" sx={{ mb: 3 }}>
@@ -607,7 +650,7 @@ class Deposit extends React.Component {
               <Box>
                 <Typography>Amount</Typography>
                 <OutlinedInput
-                  placeholder="Please insert amount"
+                  placeholder="Minimum Deposit 50 BUSD"
                   size="small"
                   sx={{
                     mt: 1,
@@ -643,11 +686,12 @@ class Deposit extends React.Component {
                 <Button
                   variant="contained"
                   sx={{
-                    backgroundColor: "#26A1F9",
+                    backgroundColor: "#0e8aa8",
                     color: "white",
                     p: 1,
                     px: 3,
                     mx: "auto",
+                    width : '100%'
                   }}
                   onClick={this.state.isApproved?  () =>
                     this.deposit(
@@ -668,40 +712,29 @@ class Deposit extends React.Component {
                 flex: 1,
                 color: "white",
                 textAlign: "left",
-                backgroundColor: "#1B2A41",
-                border: "solid 2px #7b85e0",
+                backgroundColor: "#242628",
+                border: "solid 2px #0e8aa8",
                 borderRadius: "15px",
                 p: 3,
-                boxShadow: "10px 10px 20px -4px rgb(255 255 255 / 20%)",
+                boxShadow: "10px 10px 20px -4px rgb(39 164 176 / 62%)",
               }}
             >
               <Typography variant="h4" sx={{ mb: 4.5 }}>
                 Claim
               </Typography>
+              <Typography variant="h6">
+              Minimum Withdraw 50 BUSD 
+                </Typography>
+              <br/><br/>
               <Box
                 sx={{
                   display: "flex",
                   justifyContent: "space-between",
-                  py: 2,
-                  border: "solid 2px #7b85e0",
-                  borderLeft: "none",
-                  borderRight: "none",
-                }}
-              >
-                <Typography variant="h6" sx={{ opacity: "0.5" }}>
-                  Withdraw Time
-                </Typography>{" "}
-                {this.state.linkedWalletNextWithdrawDate}
-              </Box>
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  borderBottom: "solid 2px #7b85e0",
+                  borderBottom: "solid 2px #0e8aa8",
                   py: 2,
                   mb: 5,
                 }}
-              >
+              > 
                 <Typography variant="h6" sx={{ opacity: "0.5" }}>
                   Claimable
                 </Typography>
@@ -709,6 +742,7 @@ class Deposit extends React.Component {
                   {this.state.linkedWalletClaimable} BUSD
                 </Typography>
               </Box>
+              <br/>
               <Box
                 sx={{
                   mt: 4,
@@ -719,11 +753,12 @@ class Deposit extends React.Component {
                 <Button
                   variant="contained"
                   sx={{
-                    backgroundColor: "#26A1F9",
+                    backgroundColor: "#0e8aa8",
                     color: "white",
                     p: 1,
                     px: 3,
                     mx: "auto",
+                    width : '45%'
                   }}
                   onClick={() => this.claim()}
                 >
@@ -732,11 +767,12 @@ class Deposit extends React.Component {
                 <Button
                   variant="contained"
                   sx={{
-                    backgroundColor: "#26A1F9",
+                    backgroundColor: "#0e8aa8",
                     color: "white",
                     p: 1,
                     px: 3,
                     mx: "auto",
+                    width : '45%'
                   }}
                   onClick={() => this.reDeposit()}
                 >
@@ -753,7 +789,7 @@ class Deposit extends React.Component {
                   flex: 1,
                   color: "white",
                   backgroundColor: "#30224e",
-                  border: "solid 2px #7b85e0",
+                  border: "solid 2px #594485",
                   borderRadius: "15px",
                   p: 3,
                   textAlign: "center",
@@ -761,7 +797,7 @@ class Deposit extends React.Component {
                   flexDirection: "row",
                   justifyContent: "center",
                   alignItems: "center",
-                  boxShadow: "10px 10px 20px -4px rgb(255 255 255 / 20%)",
+                  boxShadow: "10px 10px 20px -4px rgb(110 37 195 / 64%)",
                 }}
               >
               <Box component="img" src="./bscscam.png" height={50} />
