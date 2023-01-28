@@ -324,7 +324,7 @@ class Deposit extends React.Component {
       )
       .send({ from: this.state.linkedAccount })
       .once("confirmation", async () => {
-        NotificationManager.success("Deposit Transaction has beed conr", "Success", 2000);
+        NotificationManager.success("Deposit Transaction has beed confurmed", "Success", 2000);
         this.setState({
           isINTransaction : false
         })
@@ -340,7 +340,7 @@ class Deposit extends React.Component {
     }
 
     if (this.state.linkedWalletClaimable < 50) {
-      NotificationManager.error("Claimable should be over 50BUSD", "Low Claimable", 2000);
+      NotificationManager.error("Claimable should be over 100BUSD", "Low Claimable", 2000);
       return;
     }
 
@@ -650,7 +650,7 @@ class Deposit extends React.Component {
               <Box>
                 <Typography>Amount</Typography>
                 <OutlinedInput
-                  placeholder="Minimum Deposit 50 BUSD"
+                  placeholder="Minimum Deposit 500 BUSD"
                   size="small"
                   sx={{
                     mt: 1,
@@ -723,7 +723,7 @@ class Deposit extends React.Component {
                 Claim
               </Typography>
               <Typography variant="h6">
-              Minimum Withdraw 50 BUSD 
+              Minimum Withdraw 100 BUSD 
                 </Typography>
               <br/><br/>
               <Box

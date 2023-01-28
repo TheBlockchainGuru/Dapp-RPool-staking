@@ -72,7 +72,7 @@ class AccordionCom extends React.Component {
             </AccordionSummary>
             <AccordionDetails>
               <Typography>
-              You need to fund either a Metamask wallet or a Trust wallet with a minimum of 100 BUSD bep20. Along with at least 0.005 BNB for network fees. Once you have done so you can then do your deposit directly from our website or via our smart contract. Please understand that there is also a 1% dev fee on all deposits and withdrawals. This is how the project creator earns from the project.
+              You need to fund either a Metamask wallet or a Trust wallet with a minimum of 500 BUSD bep20. Along with at least 0.005 BNB for network fees. Once you have done so you can then do your deposit directly from our website or via our smart contract. Please understand that there is also a 1% dev fee on all deposits and withdrawals. This is how the project creator earns from the project.
               </Typography>
             </AccordionDetails>
           </Accordion>
@@ -84,7 +84,7 @@ class AccordionCom extends React.Component {
             </AccordionSummary>
             <AccordionDetails>
               <Typography>
-              Rug Pool does not provide any guarantees about the potential returns or profits that investors may earn through their platform. The daily yield of up to 0.5% on the full deposit may fluctuate and is not guaranteed.
+              Rug Pool does not provide any guarantees about the potential returns or profits that investors may earn through their platform. The monthly yield of up to 9% on the full deposit may fluctuate and is not guaranteed.
               </Typography>
             </AccordionDetails>
           </Accordion>
@@ -99,7 +99,7 @@ class AccordionCom extends React.Component {
             <AccordionDetails>
               <Typography>
 
-              On Rug Pool, the minimum amount that can be withdrawn is 50 BUSD. Withdrawals are allowed once per week, and a timer on the dashboard will show the remaining time until the next withdrawal can be made after the first withdrawal is completed.
+              On Rug Pool, the minimum amount that can be withdrawn is 100 BUSD. Withdrawals are allowed once per week, and a timer on the dashboard will show the remaining time until the next withdrawal can be made after the first withdrawal is completed.
                
               </Typography>
             </AccordionDetails>

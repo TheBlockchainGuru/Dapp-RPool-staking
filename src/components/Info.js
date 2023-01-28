@@ -49,7 +49,7 @@ class Info extends React.Component {
               THE RUGPOOL
             </Typography>
             <Typography variant="h6" sx={{ textAlign: "left", my: 3 }}>
-            A smart contract pool offering up to 0.5% daily with the ability to claim rewards weekly. There are no guarantees percentages can change from week to week.
+            A smart contract pool offering up to 9% monthly with the ability to claim rewards weekly. There are no guarantees percentages can change from week to week.
             </Typography>
           </Box>
         </Stack>
