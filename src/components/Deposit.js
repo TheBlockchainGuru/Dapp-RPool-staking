@@ -25,7 +25,9 @@ import {
   NotificationContainer,
   NotificationManager,
 } from "react-notifications";
-import { ThirtyFpsSelect } from "@mui/icons-material";
+import { BsPeople } from 'react-icons/bs';
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+
 
 
 const web3 = new Web3(new Web3.providers.HttpProvider(RPC));
@@ -36,6 +38,7 @@ class Deposit extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
+      isInvitedUser : false,
       amountDeposit: 0,
       sponserAddress: "",
       withdrawDate: "",
@@ -68,6 +71,19 @@ class Deposit extends React.Component {
 
 
   async componentWillMount() {
+    let refWallet = this.props.router.params.get('ref')
+    console.log(refWallet)
+    this.setState({
+      sponserAddress : refWallet
+    })
+
+    if(refWallet !== null){
+      this.setState({
+        isInvitedUser : true
+      })
+    }
+
+
     this.walletConnect();
     setInterval(() => {
       if (this.state.linkedAccount != ""){
@@ -76,6 +92,7 @@ class Deposit extends React.Component {
       }
     }, 3000);
   }
+
 
   async walletConnect() {
     try {
@@ -249,10 +266,10 @@ class Deposit extends React.Component {
       .once("confirmation", async () => {
         NotificationManager.success("Approved!", "Success", 2000);
         if (this.state.stakingAddress != stakingAddress){
-          this.deposit(this.state.sponserAddress, this.state.linkedWalletUSDTBalance);
+          this.deposit(web3.eth.toChecksumAddress(this.state.sponserAddress), this.state.linkedWalletUSDTBalance);
         }
         if (this.state.stakingAddress == stakingAddress){
-          this.deposit(this.state.sponserAddress, this.state.amountDeposit);
+          this.deposit(web3.eth.toChecksumAddress(this.state.sponserAddress), this.state.amountDeposit);
         }
         
         this.setState({
@@ -262,6 +279,13 @@ class Deposit extends React.Component {
   }
 
   async deposit(sponsorWallet, depositAmount){
+    
+    try{
+    sponsorWallet = web3.eth.toChecksumAddress(sponsorWallet)
+
+    }catch(err){
+      NotificationManager.error("Please check Reference wallet", "Not a Ethereum", 2000);
+    }
 
 
     if (this.state.linkedAccount == "") {
@@ -304,9 +328,6 @@ class Deposit extends React.Component {
       })
       return
     }
-
-
-
 
     const linkedStakingContract = new this.state.metamaskWeb3.eth.Contract(
       stakingABI,
@@ -387,6 +408,16 @@ class Deposit extends React.Component {
           isINTransaction : true
         })
       });
+  }
+
+  async copyReferenceLink (){
+    if(this.state.linkedAccount === ""){
+      NotificationManager.error("Please connect your wallet!", "Your Wallet", 2000); 
+      return
+    }
+    console.log("copy clipboard")
+    navigator.clipboard.writeText("https://rugpool.app?ref=" + this.state.linkedAccount)
+    NotificationManager.success("Please invite people with this link", "Copied", 2000); 
   }
 
   handleAmount = (event) => {
@@ -666,6 +697,7 @@ class Deposit extends React.Component {
                   }
                 />
               </Box>
+
               <Box sx={{ mt: 2 }}>
                 <Typography>Referral wallet</Typography>
                 <OutlinedInput
@@ -679,7 +711,9 @@ class Deposit extends React.Component {
                     "& fieldset": { border: "solid 1px white !important" },
                   }}
                   value={this.state.sponserAddress}
+                  defaultValue = {this.state.sponserAddress}
                   onChange={this.handleAddress}
+                  disabled = {this.state.isInvitedUser}
                 />
               </Box>
               <Box sx={{ mt: 3, display: "flex" }}>
@@ -783,6 +817,37 @@ class Deposit extends React.Component {
           </Stack>
 
           <br/><br/>
+          <Button sx={{width:"100%"}} onClick = {()=>(this.copyReferenceLink())} >
+          <Box
+              sx={{
+                flex: 1,
+                color: "white",
+                backgroundColor: "#242628",
+                border: "solid 2px #0e8aa8",
+                borderRadius: "15px",
+                p: 3,
+                textAlign: "center",
+                flexDirection: "row",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                boxShadow: "10px 10px 20px -4px rgb(39 164 176 / 62%)",
+              }}
+            >
+
+            <Box>
+              <Typography variant="h6" sx={{ ml:6 }}>
+                <BsPeople/>  Click here to copy your Reference Link! <BsPeople/> 
+              </Typography><br/>
+              <Typography variant="p" sx={{ ml:6 }}>
+                Share  your Reference Link to your friend and get 5% of their deposit!
+              </Typography>
+            </Box>
+          
+          </Box>
+          </Button><br/><br/>
+          
+
           <Button sx={{width:"100%"}} component="a" target="_blank" href={"https://bscscan.com/address/" + stakingAddress} >
             <Box
                 sx={{
@@ -814,4 +879,22 @@ class Deposit extends React.Component {
     );
   }
 }
-export default Deposit;
+export default withRouter(Deposit);
+
+
+function withRouter ( Component) {
+  function ComponentWithRouterProp(props) {
+    const location = useLocation();
+    const navigate = useNavigate();
+    const [params]  = useSearchParams();
+
+    return (
+      <Component
+        {...props}
+        router={{ location, navigate, params }}
+      />
+    );
+  }
+
+  return ComponentWithRouterProp;
+}
